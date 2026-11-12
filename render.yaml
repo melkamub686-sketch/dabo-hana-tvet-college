@@ -2,5 +2,7 @@ services:
   - type: web
     name: dabo-hana-tvet
     env: python
-    buildCommand: "pip install -r requirements.txt"
+    region: oregon
+    plan: free
+    buildCommand: "pip install --upgrade pip && pip install -r requirements.txt"
     startCommand: "python app.py"
