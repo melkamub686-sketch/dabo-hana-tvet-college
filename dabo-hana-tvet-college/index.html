@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="am" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dabo Hana TVET College - Official Cloud Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // <-- የራስዎን የ Firebase Config እዚህ ያስገቡ -->
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.db = db;
+        window.fbModules = { collection, addDoc, getDocs, doc, deleteDoc };
+        window.dispatchEvent(new Event('firebase-ready'));
+    </script>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col">
+
+    <!-- Top Header -->
+    <header class="bg-indigo-950 text-white shadow-xl sticky top-0 z-40">
+        <div class="container mx-auto px-4 py-3 flex flex-col md:flex-row justify-between items-center">
+            <div class="flex items-center space-x-3 mb-2 md:mb-0">
+                <div class="bg-amber-500 p-3 rounded-2xl text-indigo-950 font-extrabold text-xl shadow"><i class="fa-solid fa-graduation-cap"></i></div>
+                <div>
+                    <h1 class="text-xl font-extrabold tracking-wide">ዳቦ ሃና ቲቪኢቲ ኮሌጅ / Dabo Hana TVET College</h1>
+                    <p class="text-xs text-amber-300 font-medium">Cloud-Synced Portal (Android, Web & Desktop Compatible)</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button onclick="switchView('client')" class="px-4 py-2 bg-indigo-800 hover:bg-indigo-700 rounded-xl text-sm font-semibold transition shadow"><i class="fa-solid fa-globe mr-2"></i>Public Home</button>
+                <button onclick="openLoginModal()" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-indigo-950 rounded-xl text-sm font-bold transition shadow"><i class="fa-solid fa-lock mr-2"></i>Admin Login</button>
+            </div>
+        </div>
+        <!-- Multilingual Banner -->
+        <div class="bg-indigo-900 py-2.5 border-t border-indigo-800 text-center text-sm font-medium">
+            <p class="text-amber-200">
+                "Bagaa Gara KBLTO Daaboo Haannaatti Nagaan dhuftan!!" &nbsp;|&nbsp; 
+                "እንኳን ወደ ዳቦ ሃና ኳሌጅ በሰላም መጡ" &nbsp;|&nbsp; 
+                "Welcome To Dabo Hana TVET College"
+            </p>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow container mx-auto px-4 py-6">
+        
+        <!-- ================= CLIENT VIEW (Not Logged In) ================= -->
+        <div id="clientView" class="space-y-8">
+            <!-- News & Announcements -->
+            <section class="bg-white rounded-3xl shadow-xl p-6 border border-slate-200">
+                <h2 class="text-2xl font-extrabold text-indigo-950 mb-6 flex items-center"><i class="fa-solid fa-bullhorn text-amber-500 mr-3"></i>Latest News, Speeches & Media (Live Cloud Feed)</h2>
+                <div id="publicNewsFeed" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <p class="text-slate-500 col-span-full">Loading news from Google Firebase Cloud...</p>
+                </div>
+            </section>
+
+            <!-- Student Grade Checker & TTLM Download -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Grade Checker -->
+                <div class="bg-white rounded-3xl shadow-xl p-6 border border-slate-200">
+                    <h3 class="text-lg font-bold text-indigo-950 mb-3"><i class="fa-solid fa-magnifying-glass-chart text-indigo-600 mr-2"></i>Student Grade Checker</h3>
+                    <p class="text-sm text-slate-600 mb-4">Enter your Student ID to check your results, GPA, and academic standing.</p>
+                    <div class="flex space-x-2">
+                        <input type="text" id="clientSearchSid" placeholder="Enter Student ID (e.g., DBH-2026-001)" class="flex-grow px-4 py-2.5 border rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <button onclick="checkStudentGrade()" class="px-5 py-2.5 bg-indigo-950 text-white rounded-2xl hover:bg-indigo-900 font-bold transition shadow">Search</button>
+                    </div>
+                    <div id="clientGradeResult" class="mt-4"></div>
+                </div>
+
+                <!-- TTLM Download Center -->
+                <div class="bg-white rounded-3xl shadow-xl p-6 border border-slate-200">
+                    <h3 class="text-lg font-bold text-indigo-950 mb-3"><i class="fa-solid fa-book-open text-indigo-600 mr-2"></i>Department TTLM Materials</h3>
+                    <p class="text-sm text-slate-600 mb-4">Select department to download vocational training modules & books.</p>
+                    <select id="clientTtlemDept" class="w-full p-3 border rounded-2xl mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option>Hns Department</option><option>Construction</option><option>Animal Production</option>
+                        <option>Crop Production</option><option>Natural Resource</option><option>Garment</option>
+                        <option>BEI</option><option>Furniture</option><option>Mechanic</option>
+                    </select>
+                    <button onclick="loadPublicTtlem()" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-indigo-950 font-bold rounded-2xl transition shadow">View & Download Department TTLM</button>
+                    <div id="publicTtlemResult" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= ADMIN DASHBOARD VIEW ================= -->
+        <div id="adminView" class="hidden space-y-6">
+            <div class="bg-indigo-950 text-white p-5 rounded-3xl flex justify-between items-center shadow-xl">
+                <div>
+                    <h2 class="text-xl font-bold">Admin Management Portal</h2>
+                    <p class="text-xs text-amber-300">Logged in as: melkamub686@gmail.com (Full Cloud Access)</p>
+                </div>
+                <button onclick="switchView('client')" class="px-4 py-2.5 bg-red-600 hover:bg-red-500 rounded-2xl text-sm font-semibold transition shadow"><i class="fa-solid fa-right-from-bracket mr-2"></i>Logout</button>
+            </div>
+
+            <!-- Admin Navigation Tabs -->
+            <div class="flex flex-wrap gap-2 bg-white p-4 rounded-3xl shadow-md border">
+                <button onclick="showAdminTab('students')" class="admin-tab-btn px-4 py-2.5 rounded-2xl bg-indigo-950 text-white text-xs font-bold transition shadow">New Student</button>
+                <button onclick="showAdminTab('graduates')" class="admin-tab-btn px-4 py-2.5 rounded-2xl bg-slate-100 text-slate-700 text-xs font-bold transition">Graduate</button>
+                <button onclick="showAdminTab('shortTerm')" class="admin-tab-btn px-4 py-2.5 rounded-2xl bg-slate-100 text-slate-700 text-xs font-bold transition">Short-Term</button>
+                <button onclick="showAdminTab('trainers')" class="admin-tab-btn px-4 py-2.5 rounded-2xl bg-slate-100 text-slate-700 text-xs font-bold transition">Trainer Profile</button>
+                <button onclick="showAdminTab('hr')" class="admin-tab-btn px-4 py-2.5 rounded-2xl bg-slate-100 text-slate-700 text-xs font-bold transition">Human Resource</button>
+                <button onclick="showAdminTab('grades')" class="admin-tab-btn px-4 py-2.5 rounded-2xl bg-slate-100 text-slate-700 text-xs font-bold transition">Student Grades</button>
+                <button onclick="showAdminTab('assets')" class="admin-tab-btn px-4 py-2.5 rounded-2xl bg-slate-100 text-slate-700 text-xs font-bold transition">Assets (ንብረት)</button>
+                <button onclick="showAdminTab('finance')" class="admin-tab-btn px-4 py-2.5 rounded-2xl bg-slate-100 text-slate-700 text-xs font-bold transition">Finance & CostShare</button>
+                <button onclick="showAdminTab('ttlm')" class="admin-tab-btn px-4 py-2.5 rounded-2xl bg-slate-100 text-slate-700 text-xs font-bold transition">TTLM Uploader</button>
+                <button onclick="showAdminTab('news')" class="admin-tab-btn px-4 py-2.5 rounded-2xl bg-slate-100 text-slate-700 text-xs font-bold transition">News & Media</button>
+            </div>
+
+            <!-- Admin Content Container -->
+            <div class="bg-white rounded-3xl shadow-xl p-6 border border-slate-200">
+                
+                <!-- 1. NEW STUDENT REGISTRATION -->
+                <div id="tab-students" class="admin-tab-content space-y-6">
+                    <h3 class="text-lg font-bold text-indigo-950 border-b pb-3 flex items-center"><i class="fa-solid fa-user-plus text-indigo-600 mr-2"></i>New Student Registration Form</h3>
+                    <form onsubmit="saveToFirebase(event, 'students')" id="form-students" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Student Full Name</label><input type="text" name="fullName" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Age</label><input type="number" name="age" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Sex</label><select name="sex" class="w-full p-3 border rounded-2xl"><option>Male</option><option>Female</option></select></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Birth Date</label><input type="date" name="birthDate" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Birth Place</label><input type="text" name="birthPlace" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Region</label><input type="text" name="region" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Zone</label><input type="text" name="zone" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Woreda</label><input type="text" name="woreda" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Fayida ID Number</label><input type="text" name="fayidaId" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Select Department</label>
+                            <select name="department" class="w-full p-3 border rounded-2xl">
+                                <option>Hns department</option><option>construction</option><option>animal production</option>
+                                <option>crop production</option><option>natural resource</option><option>Garment</option>
+                                <option>BEI</option><option>farniture</option><option>mechanic</option>
+                            </select>
+                        </div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Select Level</label><select name="level" class="w-full p-3 border rounded-2xl"><option>level I</option><option>level II</option><option>level III</option><option>level IV</option></select></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Phone Number</label><input type="text" name="phone" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Year of Entry</label><input type="number" name="entryYear" value="2026" class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Name of Registry Person</label><input type="text" name="registryPerson" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Student Photo URL</label><input type="url" name="photoUrl" placeholder="https://..." class="w-full p-3 border rounded-2xl"></div>
+                        <div class="col-span-full flex justify-end mt-2"><button type="submit" class="px-6 py-3.5 bg-indigo-950 text-white rounded-2xl font-bold hover:bg-indigo-900 transition shadow-lg">Save New Student</button></div>
+                    </form>
+                    <div class="mt-8">
+                        <div class="flex justify-between items-center mb-3">
+                            <h4 class="font-bold text-slate-700">Registered Students Records</h4>
+                            <button onclick="exportTableToWord('table-students-el', 'Students_Report.doc')" class="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold shadow"><i class="fa-solid fa-file-word mr-1"></i>Export to Word</button>
+                        </div>
+                        <div id="container-students" class="overflow-x-auto"></div>
+                    </div>
+                </div>
+
+                <!-- 2. GRADUATE STUDENT REGISTRATION -->
+                <div id="tab-graduates" class="admin-tab-content hidden space-y-6">
+                    <h3 class="text-lg font-bold text-indigo-950 border-b pb-3 flex items-center"><i class="fa-solid fa-user-graduate text-indigo-600 mr-2"></i>Graduate Student Registration</h3>
+                    <form onsubmit="saveToFirebase(event, 'graduates')" id="form-graduates" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">ID Number</label><input type="text" name="idNumber" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Full Name</label><input type="text" name="fullName" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Birth Date & Time</label><input type="datetime-local" name="birthDateTime" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Department</label>
+                            <select name="department" class="w-full p-3 border rounded-2xl">
+                                <option>Hns department</option><option>construction</option><option>animal production</option>
+                                <option>crop production</option><option>natural resource</option><option>Garment</option>
+                                <option>BEI</option><option>farniture</option><option>mechanic</option>
+                            </select>
+                        </div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Select Level</label><select name="level" class="w-full p-3 border rounded-2xl"><option>level I</option><option>level II</option><option>level III</option><option>level IV</option></select></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Graduated Year</label><input type="number" name="gradYear" value="2026" class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Graduated Person Photo URL</label><input type="url" name="photoUrl" placeholder="https://..." class="w-full p-3 border rounded-2xl"></div>
+                        <div class="col-span-full flex justify-end mt-2"><button type="submit" class="px-6 py-3.5 bg-indigo-950 text-white rounded-2xl font-bold hover:bg-indigo-900 transition shadow-lg">Save Graduate</button></div>
+                    </form>
+                    <div class="mt-8">
+                        <div class="flex justify-between items-center mb-3">
+                            <h4 class="font-bold text-slate-700">Graduate Records</h4>
+                            <button onclick="exportTableToWord('table-graduates-el', 'Graduates_Report.doc')" class="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold shadow"><i class="fa-solid fa-file-word mr-1"></i>Export to Word</button>
+                        </div>
+                        <div id="container-graduates" class="overflow-x-auto"></div>
+                    </div>
+                </div>
+
+                <!-- 3. SHORT TERM TRAINING -->
+                <div id="tab-shortTerm" class="admin-tab-content hidden space-y-6">
+                    <h3 class="text-lg font-bold text-indigo-950 border-b pb-3 flex items-center"><i class="fa-solid fa-chalkboard-user text-indigo-600 mr-2"></i>Short Term Training Registration</h3>
+                    <form onsubmit="saveToFirebase(event, 'shortTerm')" id="form-shortTerm" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Enterprise Name</label><input type="text" name="enterpriseName" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Number of Group</label><input type="number" name="groupNumber" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Working Categories</label><input type="text" name="category" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Educational Level</label><input type="text" name="eduLevel" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Starting Budget (ETB)</label><input type="number" name="budget" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Year of Corporate</label><input type="number" name="corporateYear" value="2026" class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Training Type</label><input type="text" name="trainingType" required class="w-full p-3 border rounded-2xl"></div>
+                        <div class="col-span-full flex justify-end mt-2"><button type="submit" class="px-6 py-3.5 bg-indigo-950 text-white rounded-2xl font-bold hover:bg-indigo-900 transition shadow-lg">Save Short-Term Training</button></div>
+                    </form>
+                    <div id="container-shortTerm" class="mt-8 overflow-x-auto"></div>
+                </div>
+
+                <!-- 4. TRAINER PROFILE -->
+                <div id="tab-trainers" class="admin-tab-content hidden space-y-6">
+                    <h3 class="text-lg font-bold text-indigo-950 border-b pb-3 flex items-center"><i class="fa-solid fa-id-card-clip text-indigo-600 mr-2"></i>Trainer Profile Registration</h3>
+                    <form onsubmit="saveToFirebase(event, 'trainers')" id="form-trainers" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Full Name</label><input type="text" name="fullName" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Age & Sex</label><input type="text" name="ageSex" required class="w-full p-3 border rounded-2xl" placeholder="e.g. 32, Male"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Vocational Educational Level</label><input type="text" name="vocLevel" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Department</label><input type="text" name="department" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Graduated From</label><input type="text" name="gradFrom" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Entry & Graduation Date</label><input type="text" name="entryGradDate" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Degree Program Department</label><input type="text" name="degreeDept" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Salary (ETB)</label><input type="number" name="salary" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Trainer Photo URL</label><input type="url" name="photoUrl" placeholder="https://..." class="w-full p-3 border rounded-2xl"></div>
+                        <div class="col-span-full flex justify-end mt-2"><button type="submit" class="px-6 py-3.5 bg-indigo-950 text-white rounded-2xl font-bold hover:bg-indigo-900 transition shadow-lg">Save Trainer Profile</button></div>
+                    </form>
+                    <div id="container-trainers" class="mt-8 overflow-x-auto"></div>
+                </div>
+
+                <!-- 5. HUMAN RESOURCE -->
+                <div id="tab-hr" class="admin-tab-content hidden space-y-6">
+                    <h3 class="text-lg font-bold text-indigo-950 border-b pb-3 flex items-center"><i class="fa-solid fa-users-gear text-indigo-600 mr-2"></i>Human Resource Management</h3>
+                    <form onsubmit="saveToFirebase(event, 'hr')" id="form-hr" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Name</label><input type="text" name="name" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Age & Sex</label><input type="text" name="ageSex" required class="w-full p-3 border rounded-2xl" placeholder="e.g. 29, Female"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Job Description</label><input type="text" name="jobDesc" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Educational Level</label><input type="text" name="eduLevel" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Date of Employed</label><input type="date" name="employedDate" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Salary (ETB)</label><input type="number" name="salary" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Photo URL</label><input type="url" name="photoUrl" placeholder="https://..." class="w-full p-3 border rounded-2xl"></div>
+                        <div class="col-span-full flex justify-end mt-2"><button type="submit" class="px-6 py-3.5 bg-indigo-950 text-white rounded-2xl font-bold hover:bg-indigo-900 transition shadow-lg">Save HR Record</button></div>
+                    </form>
+                    <div id="container-hr" class="mt-8 overflow-x-auto"></div>
+                </div>
+
+                <!-- 6. STUDENT GRADES -->
+                <div id="tab-grades" class="admin-tab-content hidden space-y-6">
+                    <h3 class="text-lg font-bold text-indigo-950 border-b pb-3 flex items-center"><i class="fa-solid fa-graduation-cap text-indigo-600 mr-2"></i>የተማሪዎች Grade ማሰገቢያ</h3>
+                    <form onsubmit="saveToFirebase(event, 'grades')" id="form-grades" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Student ID</label><input type="text" name="studentId" required class="w-full p-3 border rounded-2xl" placeholder="DBH-2026-001"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Name</label><input type="text" name="name" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Course Title</label><input type="text" name="courseTitle" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Level</label><select name="level" class="w-full p-3 border rounded-2xl"><option>level I</option><option>level II</option><option>level III</option><option>level IV</option></select></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Total Student Point</label><input type="number" step="0.1" name="totalPoint" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Grade Letter</label><input type="text" name="gradeLetter" required class="w-full p-3 border rounded-2xl" placeholder="A, B, C..."></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">GPA</label><input type="number" step="0.01" name="gpa" required class="w-full p-3 border rounded-2xl" placeholder="3.5"></div>
+                        <div class="col-span-full flex justify-end mt-2"><button type="submit" class="px-6 py-3.5 bg-indigo-950 text-white rounded-2xl font-bold hover:bg-indigo-900 transition shadow-lg">Save Grade</button></div>
+                    </form>
+                    <div id="container-grades" class="mt-8 overflow-x-auto"></div>
+                </div>
+
+                <!-- 7. ASSET REGISTRATION -->
+                <div id="tab-assets" class="admin-tab-content hidden space-y-6">
+                    <h3 class="text-lg font-bold text-indigo-950 border-b pb-3 flex items-center"><i class="fa-solid fa-boxes-stacked text-indigo-600 mr-2"></i>የንብረት መመዝገቢያ (Assets Inventory)</h3>
+                    <form onsubmit="saveToFirebase(event, 'assets')" id="form-assets" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">የንብረቱ ስም</label><input type="text" name="assetName" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">የንብረቱ አይነት</label><select name="assetType" class="w-full p-3 border rounded-2xl"><option>ቋሚ (Fixed)</option><option>አላቂ (Consumable)</option></select></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">የንብረት Model</label><input type="text" name="model" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">የተገዛበት ቀን</label><input type="date" name="buyDate" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">የተገዛበት ብር (ETB)</label><input type="number" name="price" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">ንብረቱ የያዘው ሰው</label><input type="text" name="holder" required class="w-full p-3 border rounded-2xl"></div>
+                        <div class="col-span-full flex justify-end mt-2"><button type="submit" class="px-6 py-3.5 bg-indigo-950 text-white rounded-2xl font-bold hover:bg-indigo-900 transition shadow-lg">Save Asset Record</button></div>
+                    </form>
+                    <div class="mt-8">
+                        <div class="flex justify-between items-center mb-3">
+                            <h4 class="font-bold text-slate-700">All Asset Records & Reports</h4>
+                            <div class="space-x-2">
+                                <button onclick="window.print()" class="px-4 py-2 bg-slate-800 text-white rounded-xl text-xs font-bold shadow"><i class="fa-solid fa-print mr-1"></i>Print Report</button>
+                                <button onclick="exportTableToWord('table-assets-el', 'Assets_Report.doc')" class="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold shadow"><i class="fa-solid fa-file-word mr-1"></i>Export to Word</button>
+                            </div>
+                        </div>
+                        <div id="container-assets" class="overflow-x-auto"></div>
+                    </div>
+                </div>
+
+                <!-- 8. FINANCE & COST-SHARE -->
+                <div id="tab-finance" class="admin-tab-content hidden space-y-6">
+                    <h3 class="text-lg font-bold text-indigo-950 border-b pb-3 flex items-center"><i class="fa-solid fa-wallet text-indigo-600 mr-2"></i>Finance & Cost-Share (የኮሌጅ ገቢዎች)</h3>
+                    <form onsubmit="saveToFirebase(event, 'finance')" id="form-finance" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Student Name / ID / Payer</label><input type="text" name="payerName" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">የገቢ ዓይነት (Revenue Type)</label>
+                            <select name="revenueType" class="w-full p-3 border rounded-2xl">
+                                <option>ከ ተማሪ ከእያንዳንዱ Level መመዝገቢያ</option>
+                                <option>ከመሬት ክራይ ላይ</option>
+                                <option>የፈርኒቸር ምርቶች ላይ</option>
+                                <option>ከ short term temporary ክፍያ</option>
+                            </select>
+                        </div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Payment Status</label><select name="status" class="w-full p-3 border rounded-2xl"><option value="Paid">ከፍሏል (Paid)</option><option value="Unpaid">አልከፈለም (Unpaid)</option></select></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Amount (ETB)</label><input type="number" name="amount" required class="w-full p-3 border rounded-2xl"></div>
+                        <div class="col-span-full flex justify-end mt-2"><button type="submit" class="px-6 py-3.5 bg-indigo-950 text-white rounded-2xl font-bold hover:bg-indigo-900 transition shadow-lg">Save Finance Record</button></div>
+                    </form>
+                    <div id="container-finance" class="mt-8 overflow-x-auto"></div>
+                </div>
+
+                <!-- 9. TTLM UPLOADER -->
+                <div id="tab-ttlm" class="admin-tab-content hidden space-y-6">
+                    <h3 class="text-lg font-bold text-indigo-950 border-b pb-3 flex items-center"><i class="fa-solid fa-cloud-arrow-up text-indigo-600 mr-2"></i>Department TTLM Material Uploader</h3>
+                    <form onsubmit="saveToFirebase(event, 'ttlm')" id="form-ttlm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Module / Book Title</label><input type="text" name="title" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Department</label>
+                            <select name="department" class="w-full p-3 border rounded-2xl">
+                                <option>Hns department</option><option>construction</option><option>animal production</option>
+                                <option>crop production</option><option>natural resource</option><option>Garment</option>
+                                <option>BEI</option><option>farniture</option><option>mechanic</option>
+                            </select>
+                        </div>
+                        <div class="col-span-full"><label class="block text-xs font-bold text-slate-600 mb-1">Document / PDF Link</label><input type="url" name="fileUrl" placeholder="https://..." required class="w-full p-3 border rounded-2xl"></div>
+                        <div class="col-span-full flex justify-end mt-2"><button type="submit" class="px-6 py-3.5 bg-indigo-950 text-white rounded-2xl font-bold hover:bg-indigo-900 transition shadow-lg">Upload TTLM</button></div>
+                    </form>
+                    <div id="container-ttlm" class="mt-8 overflow-x-auto"></div>
+                </div>
+
+                <!-- 10. NEWS & MEDIA PUBLISHER -->
+                <div id="tab-news" class="admin-tab-content hidden space-y-6">
+                    <h3 class="text-lg font-bold text-indigo-950 border-b pb-3 flex items-center"><i class="fa-solid fa-newspaper text-indigo-600 mr-2"></i>News, Speech & Media Publisher (Admin Only)</h3>
+                    <form onsubmit="saveToFirebase(event, 'news')" id="form-news" class="space-y-4">
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">News Title</label><input type="text" name="title" required class="w-full p-3 border rounded-2xl"></div>
+                        <div><label class="block text-xs font-bold text-slate-600 mb-1">Information / Speech Content</label><textarea name="content" rows="4" required class="w-full p-3 border rounded-2xl"></textarea></div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div><label class="block text-xs font-bold text-slate-600 mb-1">Photo URL (Optional)</label><input type="url" name="photoUrl" placeholder="https://..." class="w-full p-3 border rounded-2xl"></div>
+                            <div><label class="block text-xs font-bold text-slate-600 mb-1">Video / Audio URL (Optional)</label><input type="url" name="mediaUrl" placeholder="https://..." class="w-full p-3 border rounded-2xl"></div>
+                        </div>
+                        <div class="flex justify-end mt-2"><button type="submit" class="px-6 py-3.5 bg-indigo-950 text-white rounded-2xl font-bold hover:bg-indigo-900 transition shadow-lg">Publish to Public Homepage</button></div>
+                    </form>
+                    <div id="container-news" class="mt-8 overflow-x-auto"></div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Admin Login Modal -->
+    <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center z-50 p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
+            <button onclick="closeLoginModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+            <h3 class="text-xl font-bold text-indigo-950 mb-4 flex items-center"><i class="fa-solid fa-shield-halved text-amber-500 mr-2"></i>Admin Login</h3>
+            <form onsubmit="handleAdminLogin(event)" class="space-y-4">
+                <div><label class="block text-xs font-bold text-slate-600 mb-1">Email</label><input type="email" id="adminEmail" required class="w-full p-3 border rounded-2xl" placeholder="melkamub686@gmail.com"></div>
+                <div><label class="block text-xs font-bold text-slate-600 mb-1">Password</label><input type="password" id="adminPass" required class="w-full p-3 border rounded-2xl"></div>
+                <button type="submit" class="w-full py-3.5 bg-indigo-950 text-white rounded-2xl font-bold hover:bg-indigo-900 transition shadow-lg">Login to Cloud Portal</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-indigo-950 text-white py-6 mt-12 border-t border-indigo-900">
+        <div class="container mx-auto px-4 text-center text-sm space-y-1">
+            <p>Developed by <span class="text-amber-400 font-bold">Melkamu Birhanu</span> (Dabo TVET Trainer, BSc in Computer Science)</p>
+            <p class="text-xs text-slate-400">Compatible with Android, Mobile Browsers, Laptops & Desktops | Powered by Google Firebase Cloud</p>
+        </div>
+    </footer>
+
+    <!-- Frontend Script Logic -->
+    <script>
+        window.addEventListener('firebase-ready', () => {
+            loadAllData();
+        });
+
+        function switchView(view) {
+            if(view === 'client') {
+                document.getElementById('clientView').classList.remove('hidden');
+                document.getElementById('adminView').classList.add('hidden');
+                loadAllData();
+            } else {
+                document.getElementById('adminView').classList.remove('hidden');
+                document.getElementById('clientView').classList.add('hidden');
+                loadAllData();
+            }
+        }
+
+        function openLoginModal() { document.getElementById('loginModal').classList.remove('hidden'); }
+        function closeLoginModal() { document.getElementById('loginModal').classList.add('hidden'); }
+
+        async function handleAdminLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('adminEmail').value;
+            const pass = document.getElementById('adminPass').value;
+            
+            if(email === 'melkamub686@gmail.com' && pass === '178010MnF@#$') {
+                closeLoginModal();
+                switchView('admin');
+                alert('Admin Login Successful! Connected to Firebase Cloud.');
+            } else {
+                alert('Invalid Admin Credentials!');
+            }
+        }
+
+        function showAdminTab(tabName) {
+            document.querySelectorAll('.admin-tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.admin-tab-btn').forEach(btn => {
+                btn.classList.remove('bg-indigo-950', 'text-white');
+                btn.classList.add('bg-slate-100', 'text-slate-700');
+            });
+            document.getElementById('tab-' + tabName).classList.remove('hidden');
+            event.currentTarget.classList.remove('bg-slate-100', 'text-slate-700');
+            event.currentTarget.classList.add('bg-indigo-950', 'text-white');
+        }
+
+        // Firebase Firestore Operations
+        async function saveToFirebase(e, collectionName) {
+            e.preventDefault();
+            const form = document.getElementById('form-' + collectionName);
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+            data.createdAt = new Date().toISOString();
+
+            try {
+                const { collection, addDoc } = window.fbModules;
+                await addDoc(collection(window.db, collectionName), data);
+                alert('Successfully saved to Google Firebase Cloud Database!');
+                form.reset();
+                loadAllData();
+            } catch (error) {
+                console.error("Error saving document: ", error);
+                alert('Error saving data. Check your Firebase Config.');
+            }
+        }
+
+        async function loadAllData() {
+            if(!window.db) return;
+            const { collection, getDocs, doc, deleteDoc } = window.fbModules;
+            const collectionsList = ['students', 'graduates', 'shortTerm', 'trainers', 'hr', 'grades', 'assets', 'finance', 'ttlm', 'news'];
+
+            for(const colName of collectionsList) {
+                try {
+                    const querySnapshot = await getDocs(collection(window.db, colName));
+                    const container = document.getElementById('container-' + colName);
+                    
+                    if(colName === 'news') {
+                        const newsFeed = document.getElementById('publicNewsFeed');
+                        if(newsFeed) {
+                            newsFeed.innerHTML = '';
+                            querySnapshot.forEach(docSnap => {
+                                const item = docSnap.data();
+                                newsFeed.innerHTML += `
+                                    <div class="border rounded-3xl p-5 shadow-sm bg-slate-50 flex flex-col justify-between">
+                                        <div>
+                                            <h4 class="font-bold text-indigo-950 text-lg mb-2">${item.title}</h4>
+                                            <p class="text-sm text-slate-600 mb-3 whitespace-pre-line">${item.content}</p>
+                                            ${item.photoUrl ? `<img src="${item.photoUrl}" class="w-full h-44 object-cover rounded-2xl mb-3 shadow-sm">` : ''}
+                                            ${item.mediaUrl ? `<div class="mb-3"><a href="${item.mediaUrl}" target="_blank" class="text-indigo-600 text-sm font-semibold underline"><i class="fa-solid fa-play mr-1"></i>Play Media / Video / Audio</a></div>` : ''}
+                                        </div>
+                                        <span class="text-xs text-slate-400 mt-2">Published: ${new Date(item.createdAt).toLocaleDateString()}</span>
+                                    </div>
+                                `;
+                            });
+                            if(querySnapshot.empty) {
+                                newsFeed.innerHTML = '<p class="text-slate-500 col-span-full">No announcements published yet by admin.</p>';
+                            }
+                        }
+                    }
+
+                    if(container) {
+                        if(querySnapshot.empty) {
+                            container.innerHTML = '<p class="text-slate-500 text-sm">No records found in cloud database.</p>';
+                            continue;
+                        }
+
+                        let html = `<table id="table-${colName}-el" class="w-full text-left border-collapse border border-slate-300 text-sm bg-white"><thead><tr class="bg-indigo-100 text-indigo-950">`;
+                        let sampleData = null;
+                        querySnapshot.forEach(doc => { sampleData = doc.data(); });
+                        
+                        const keys = Object.keys(sampleData).filter(k => k !== 'createdAt');
+                        keys.forEach(k => html += `<th class="border border-slate-300 p-2.5 font-bold uppercase text-xs">${k}</th>`);
+                        html += `<th class="border border-slate-300 p-2.5 font-bold uppercase text-xs">Actions</th></tr></thead><tbody>`;
+
+                        querySnapshot.forEach(docSnap => {
+                            const item = docSnap.data();
+                            html += `<tr class="hover:bg-slate-50">`;
+                            keys.forEach(k => html += `<td class="border border-slate-300 p-2.5">${item[k] || ''}</td>`);
+                            html += `<td class="border border-slate-300 p-2.5 text-center"><button onclick="deleteRecord('${colName}', '${docSnap.id}')" class="text-red-600 hover:text-red-800 font-bold text-xs bg-red-50 px-2 py-1 rounded">Delete</button></td></tr>`;
+                        });
+                        html += `</tbody></table>`;
+                        container.innerHTML = html;
+                    }
+                } catch(e) { console.log("Loading error for " + colName, e); }
+            }
+        }
+
+        async function deleteRecord(colName, docId) {
+            if(!confirm('Are you sure you want to delete this record from Cloud?')) return;
+            try {
+                const { doc, deleteDoc } = window.fbModules;
+                await deleteDoc(doc(window.db, colName, docId));
+                alert('Record deleted successfully!');
+                loadAllData();
+            } catch(e) {
+                alert('Error deleting record: ' + e.message);
+            }
+        }
+
+        async function checkStudentGrade() {
+            const sid = document.getElementById('clientSearchSid').value.trim();
+            const box = document.getElementById('clientGradeResult');
+            if(!sid) { box.innerHTML = '<p class="text-red-500 text-sm">Please enter Student ID.</p>'; return; }
+            
+            try {
+                const { collection, getDocs } = window.fbModules;
+                const snap = await getDocs(collection(window.db, 'grades'));
+                let found = false;
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    if(data.studentId === sid) {
+                        found = true;
+                        box.innerHTML = `
+                            <div class="p-4 bg-indigo-50 border border-indigo-200 rounded-2xl text-sm text-indigo-950 space-y-1 shadow-sm">
+                                <p><strong>Student ID:</strong> ${data.studentId}</p>
+                                <p><strong>Name:</strong> ${data.name}</p>
+                                <p><strong>Course:</strong> ${data.courseTitle} (${data.level})</p>
+                                <p><strong>Total Point:</strong> ${data.totalPoint} | <strong>Grade:</strong> ${data.gradeLetter}</p>
+                                <p><strong>GPA:</strong> ${data.gpa}</p>
+                            </div>
+                        `;
+                    }
+                });
+                if(!found) {
+                    box.innerHTML = `<p class="text-amber-600 text-sm p-3 bg-amber-50 rounded-2xl">No grade record found for ID: ${sid}</p>`;
+                }
+            } catch(e) {
+                box.innerHTML = `<p class="text-red-500 text-sm">Error checking grade.</p>`;
+            }
+        }
+
+        async function loadPublicTtlem() {
+            const dept = document.getElementById('clientTtlemDept').value;
+            const resBox = document.getElementById('publicTtlemResult');
+            try {
+                const { collection, getDocs } = window.fbModules;
+                const snap = await getDocs(collection(window.db, 'ttlm'));
+                let listHtml = `<div class="mt-3 space-y-2">`;
+                let count = 0;
+                snap.forEach(doc => {
+                    const item = doc.data();
+                    if(item.department === dept) {
+                        count++;
+                        listHtml += `<div class="p-3 border rounded-xl bg-slate-50 flex justify-between items-center text-sm">
+                            <span><strong>${item.title}</strong></span>
+                            <a href="${item.fileUrl}" target="_blank" class="px-3 py-1 bg-indigo-950 text-white rounded-lg text-xs font-bold">Download</a>
+                        </div>`;
+                    }
+                });
+                listHtml += `</div>`;
+                if(count === 0) {
+                    resBox.innerHTML = `<p class="text-slate-500 text-xs mt-2">No TTLM uploaded yet for ${dept}.</p>`;
+                } else {
+                    resBox.innerHTML = listHtml;
+                }
+            } catch(e) {
+                resBox.innerHTML = `<p class="text-red-500 text-xs mt-2">Error loading TTLM.</p>`;
+            }
+        }
+
+        function exportTableToWord(tableID, filename = '') {
+            let downloadLink;
+            let dataType = 'application/vnd.ms-word';
+            let tableSelect = document.getElementById(tableID);
+            if (!tableSelect) { alert('Table report not found'); return; }
+            let tableHTML = tableSelect.outerHTML.replace(/<button[^>]*>.*?<\/button>/g, '');
+            let html = `<!DOCTYPE html><html><head><meta charset='utf-8'></head><body>${tableHTML}</body></html>`;
+            let blob = new Blob(['\ufeff' + html], { type: dataType });
+            
+            downloadLink = document.createElement("a");
+            document.body.appendChild(downloadLink);
+            if(navigator.msSaveOrOpenBlob) {
+                navigator.msSaveOrOpenBlob(blob, filename);
+            } else {
+                downloadLink.href = 'data:' + dataType + ',' + encodeURIComponent(html);
+                downloadLink.download = filename;
+                downloadLink.click();
+            }
+            document.body.removeChild(downloadLink);
+        }
+    </script>
+</body>
+</html>
